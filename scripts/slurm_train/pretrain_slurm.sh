@@ -14,13 +14,12 @@ cd "${PROJECT_ROOT}"
 mkdir -p "${PROJECT_ROOT}/slurm_train_logs"
 
 export PYTHONPATH="${PROJECT_ROOT}"
-if [[ -z "${WANDB_API_KEY:-}" ]]; then
-    echo "WANDB_API_KEY is not set." >&2
-    echo "Export WANDB_API_KEY before submitting the Slurm job." >&2
-    exit 1
-fi
+export WANDB_DISABLED=false
+export WANDB_PROJECT="${WANDB_PROJECT:-SwimBird}"
+export WANDB_NAME="${WANDB_NAME:-${RUN_NAME:-swimbird}}"
+export WANDB_WATCH="${WANDB_WATCH:-false}"
+export WANDB_API_KEY="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"
 
-export WANDB_DISABLED=true
 
 # Enable additional NCCL diagnostics for multi-node runs.
 export NCCL_DEBUG="${NCCL_DEBUG:-INFO}"
@@ -104,5 +103,5 @@ torchrun \
     --save_total_limit 10 \
     --dataloader_num_workers 8 \
     --random_seed "${RANDOM_SEED}" \
-    --report_to tensorboard \
+    --report_to wandb \
     "$@"
