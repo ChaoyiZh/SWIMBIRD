@@ -70,7 +70,7 @@ set -x
 torchrun $DISTRIBUTED_ARGS \
     src/train/train.py \
     --run_name "$RUN_NAME" \
-    --deepspeed scripts/zero2.json \
+    --deepspeed scripts/zero3_offload.json \
     --latent_loss $LATENT_LOSS\
     --model_id $MODEL_NAME \
     --data_path "${DATA_PATH[@]}" \
