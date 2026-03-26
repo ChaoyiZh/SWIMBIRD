@@ -15,9 +15,6 @@
 
 set -euo pipefail
 
-source /project/siyuh/common/chaoyi/miniconda3/etc/profile.d/conda.sh
-conda activate swimbird
-
 PROJECT_ROOT="/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/VLMEvalKit"
 cd "${PROJECT_ROOT}"
 
