@@ -35,7 +35,7 @@ fi
 
 EXP_NAME="$1"
 shift
-LOG_ROOT="/data/chaoyiz/workspace/code/SwimBird/VLMEvalKit/slurm_logs/${EXP_NAME}"
+LOG_ROOT="/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/VLMEvalKit/${EXP_NAME}"
 mkdir -p "${LOG_ROOT}"
 
 if (( $# == 0 )); then
