@@ -103,4 +103,6 @@ torchrun $DISTRIBUTED_ARGS \
     --save_total_limit 10 \
     --dataloader_num_workers 8 \
     --random_seed $RANDOM_SEED \
+    --freeze_llm True \
     --report_to wandb # wandb
+    
