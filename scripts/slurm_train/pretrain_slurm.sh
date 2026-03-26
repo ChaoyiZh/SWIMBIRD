@@ -25,6 +25,7 @@ export WANDB_PROJECT="${WANDB_PROJECT:-SwimBird}"
 export WANDB_NAME="${WANDB_NAME:-${RUN_NAME:-swimbird}}"
 export WANDB_WATCH="${WANDB_WATCH:-false}"
 export WANDB__SERVICE_WAIT="${WANDB__SERVICE_WAIT:-300}"
+export WANDB_API_KEY="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"
 
 # Enable additional NCCL diagnostics for multi-node runs.
 export NCCL_DEBUG="${NCCL_DEBUG:-INFO}"
