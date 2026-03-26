@@ -88,9 +88,11 @@ torchrun $DISTRIBUTED_ARGS \
     --num_train_epochs 1 \
     --per_device_train_batch_size $BATCH_PER_DEVICE \
     --gradient_accumulation_steps $GRAD_ACCUM_STEPS \
-    --max_seq_length 8192 \
+    --deepspeed scripts/zero2.json \
+    --max_seq_length 2048 \
+    --max_latent_token 4 \
+    --image_max_pixels $((1024 * 32 * 32)) \
     --image_min_pixels $((MIN_TOKEN * 32 * 32)) \
-    --image_max_pixels $((MAX_TOKEN * 32 * 32)) \
     --weight_decay 0.1 \
     --warmup_ratio 0.1 \
     --lr_scheduler_type "cosine" \
@@ -103,6 +105,5 @@ torchrun $DISTRIBUTED_ARGS \
     --save_total_limit 10 \
     --dataloader_num_workers 8 \
     --random_seed $RANDOM_SEED \
-    --freeze_llm True \
     --report_to wandb # wandb
     
