@@ -5,4 +5,5 @@ VLMEvalKit/slurm_logs/
 SwimBird-SFT-92K
 models/
 .vscode/
-src/__pycache__/
+__pycache__/
+*.pyc
