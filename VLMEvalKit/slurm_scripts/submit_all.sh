@@ -55,11 +55,10 @@ for benchmark in "${TARGETS[@]}"; do
     job_name="${EXP_NAME}_${benchmark}"
     log_stamp="$(date +%Y%m%d_%H%M%S)"
     out_log="${LOG_ROOT}/${benchmark}_${log_stamp}.out"
-    err_log="${LOG_ROOT}/${benchmark}_${log_stamp}.err"
     echo "Submitting ${benchmark} with job name ${job_name}"
     sbatch \
         --job-name="${job_name}" \
         --output="${out_log}" \
-        --error="${err_log}" \
+        --error="${out_log}" \
         "${script}"
 done
