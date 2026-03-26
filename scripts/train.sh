@@ -88,6 +88,7 @@ torchrun $DISTRIBUTED_ARGS \
     --num_train_epochs 1 \
     --per_device_train_batch_size $BATCH_PER_DEVICE \
     --gradient_accumulation_steps $GRAD_ACCUM_STEPS \
+    --max_seq_length 8192 \
     --image_min_pixels $((MIN_TOKEN * 32 * 32)) \
     --image_max_pixels $((MAX_TOKEN * 32 * 32)) \
     --weight_decay 0.1 \
