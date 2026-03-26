@@ -5,7 +5,7 @@ export WANDB_DISABLED=true
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=DETAIL
 
-NPROC_PER_NODE=8
+NPROC_PER_NODE=1
 WORLD_SIZE=1
 RANK=0
 MASTER_ADDR=0.0.0.0
@@ -24,12 +24,19 @@ MODEL_SIZE='8B'
 MODEL_NAME="Qwen/Qwen3-VL-${MODEL_SIZE}-Instruct"
 
 
+# DATA_PATH=(
+#     "/data/chaoyiz/workspace/code/SwimBird/SwimBird-SFT-92K/SwimBird-ZebraCoT"
+#     "/data/chaoyiz/workspace/code/SwimBird/SwimBird-SFT-92K/SwimBird-ThinkMorph"
+#     "/data/chaoyiz/workspace/code/SwimBird/SwimBird-SFT-92K/SwimBird-MathCanvas"
+#     "/data/chaoyiz/workspace/code/SwimBird/SwimBird-SFT-92K/SwimBird-OpenMMReasoner"
+# )
 DATA_PATH=(
     "SwimBird-SFT-92K/SwimBird-ZebraCoT"
     "SwimBird-SFT-92K/SwimBird-ThinkMorph"
     "SwimBird-SFT-92K/SwimBird-MathCanvas"
     "SwimBird-SFT-92K/SwimBird-OpenMMReasoner"
 )
+
 
 RANDOM_SEED=42
 GRAD_CHECK=True
@@ -53,6 +60,7 @@ RUN_NAME="swimbird"
 OUTPUT_DIR="swimbird"
 
 export PYTHONPATH=$(pwd)
+set -x
 torchrun $DISTRIBUTED_ARGS \
     src/train/train.py \
     --run_name "$RUN_NAME" \

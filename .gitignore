@@ -3,3 +3,5 @@ datasets/
 VLMEvalKit/slurm_logs/
 
 SwimBird-SFT-92K
+models/
+.vscode/
