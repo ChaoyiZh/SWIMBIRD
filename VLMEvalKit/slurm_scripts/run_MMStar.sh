@@ -18,7 +18,8 @@ set -euo pipefail
 PROJECT_ROOT="/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/VLMEvalKit"
 cd "${PROJECT_ROOT}"
 
-export LMUData=/project/siyuh/common/chaoyi/code/SWIMBIRD/datasets/VLMEval
+export LMUData=/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/datasets/VLMEval
+mkdir -p "${LMUData}"
 
 mkdir -p "${PROJECT_ROOT}/slurm_logs"
 
