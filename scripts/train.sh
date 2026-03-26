@@ -1,6 +1,10 @@
 #!/bin/bash
 
-export WANDB_DISABLED=true
+export WANDB_DISABLED=false
+export WANDB_PROJECT="${WANDB_PROJECT:-SwimBird}"
+export WANDB_NAME="${WANDB_NAME:-${RUN_NAME:-swimbird}}"
+export WANDB_WATCH="${WANDB_WATCH:-false}"
+export WANDB_API_KEY="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"
 # export NCCL_DEBUG=INFO
 # export NCCL_DEBUG_SUBSYS=ALL
 # export TORCH_DISTRIBUTED_DEBUG=DETAIL
@@ -98,4 +102,4 @@ torchrun $DISTRIBUTED_ARGS \
     --save_total_limit 10 \
     --dataloader_num_workers 8 \
     --random_seed $RANDOM_SEED \
-    --report_to tensorboard # wandb
+    --report_to wandb # wandb
