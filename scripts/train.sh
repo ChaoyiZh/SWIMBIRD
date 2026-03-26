@@ -23,7 +23,7 @@ DISTRIBUTED_ARGS="
 # MODEL_SIZE='8B'
 # MODEL_NAME="Qwen/Qwen3-VL-${MODEL_SIZE}-Instruct"
 # change to the path of your local model if you have already downloaded the model and converted it to HuggingFace format
-MODEL_NAME="models/Qwen/Qwen3-VL-8B-Instruct"
+MODEL_NAME="models/Qwen3-VL-8B-Instruct"
 
 
 # DATA_PATH=(
