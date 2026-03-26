@@ -10,8 +10,8 @@
 #SBATCH --partition=mri2020
 #SBATCH --mail-user=chaoyiz@clemson.edu
 #SBATCH --mail-type=BEGIN,END,FAIL
-#SBATCH --output=/data/chaoyiz/workspace/code/SwimBird/VLMEvalKit/slurm_logs/%x_%j.out
-#SBATCH --error=/data/chaoyiz/workspace/code/SwimBird/VLMEvalKit/slurm_logs/%x_%j.err
+#SBATCH --output=/data/chaoyiz/workspace/code/SwimBird/VLMEvalKit/slurm_logs/%x.out
+#SBATCH --error=/data/chaoyiz/workspace/code/SwimBird/VLMEvalKit/slurm_logs/%x.err
 
 set -euo pipefail
 

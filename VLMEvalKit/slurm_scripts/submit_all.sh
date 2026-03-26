@@ -27,6 +27,17 @@ ALL_BENCHMARKS=(
     RealWorldQA
 )
 
+if (( $# < 1 )); then
+    echo "Usage: bash submit_all.sh <experiment_name> [benchmark1 benchmark2 ...]" >&2
+    echo "Example: bash submit_all.sh pretrain DynaMath MMStar" >&2
+    exit 1
+fi
+
+EXP_NAME="$1"
+shift
+LOG_ROOT="/data/chaoyiz/workspace/code/SwimBird/VLMEvalKit/slurm_logs/${EXP_NAME}"
+mkdir -p "${LOG_ROOT}"
+
 if (( $# == 0 )); then
     TARGETS=("${ALL_BENCHMARKS[@]}")
 else
@@ -41,6 +52,14 @@ for benchmark in "${TARGETS[@]}"; do
     fi
 
     script="${SCRIPT_MAP[$benchmark]}"
-    echo "Submitting ${benchmark} with ${script}"
-    sbatch "${script}"
+    job_name="${EXP_NAME}_${benchmark}"
+    log_stamp="$(date +%Y%m%d_%H%M%S)"
+    out_log="${LOG_ROOT}/${benchmark}_${log_stamp}.out"
+    err_log="${LOG_ROOT}/${benchmark}_${log_stamp}.err"
+    echo "Submitting ${benchmark} with job name ${job_name}"
+    sbatch \
+        --job-name="${job_name}" \
+        --output="${out_log}" \
+        --error="${err_log}" \
+        "${script}"
 done
