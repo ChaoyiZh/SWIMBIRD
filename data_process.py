@@ -16,9 +16,17 @@ def process_single_file(file_path, prefix):
             nonlocal modified
             for field in ["image", "reasoning_image"]:
                 if field in item and isinstance(item[field], list):
-                    # Add prefix to each path in the list
-                    item[field] = [os.path.join(prefix, p) for p in item[field]]
-                    modified = True
+                    # Add prefix only for relative paths so the script is safe to re-run.
+                    updated_paths = []
+                    field_changed = False
+                    for p in item[field]:
+                        if os.path.isabs(p):
+                            updated_paths.append(p)
+                        else:
+                            updated_paths.append(os.path.join(prefix, p))
+                            field_changed = True
+                    item[field] = updated_paths
+                    modified = modified or field_changed
 
         if isinstance(data, list):
             for sample in data:

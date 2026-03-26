@@ -22,8 +22,9 @@ Environment variables:
 
 What this script does:
   1. Downloads ${DATASET_REPO} from Hugging Face.
-  2. Verifies the 4 expected dataset subdirectories exist.
-  3. Rewrites JSON image paths to absolute paths with data_process.py.
+  2. Extracts all downloaded zip files in place.
+  3. Verifies the 4 expected dataset subdirectories exist.
+  4. Rewrites JSON image paths to absolute paths with data_process.py.
 
 Examples:
   bash scripts/download_swimbird_data.sh
@@ -99,6 +100,19 @@ for subdir in "${EXPECTED_SUBDIRS[@]}"; do
     echo "Inspect the downloaded dataset layout before training." >&2
     exit 1
   fi
+done
+
+if ! command -v unzip >/dev/null 2>&1; then
+  echo "Missing required command: unzip" >&2
+  echo "Install unzip, then run scripts/extract_swimbird_data.sh on the dataset root." >&2
+  exit 1
+fi
+
+mapfile -t ZIP_FILES < <(find "${OUTPUT_DIR}" -type f -name '*.zip' | sort)
+for zip_file in "${ZIP_FILES[@]}"; do
+  target_dir="$(dirname "${zip_file}")"
+  echo "Extracting ${zip_file} -> ${target_dir}"
+  unzip -o -q "${zip_file}" -d "${target_dir}"
 done
 
 for subdir in "${EXPECTED_SUBDIRS[@]}"; do
