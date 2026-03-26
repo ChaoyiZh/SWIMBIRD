@@ -14,6 +14,7 @@
 #SBATCH --mail-user=chaoyiz@clemson.edu
 #SBATCH --output=/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/slurm_logs/%x_%j.out
 #SBATCH --error=/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/slurm_logs/%x_%j.err
+#SBATCH --export=ALL
 
 set -euo pipefail
 
