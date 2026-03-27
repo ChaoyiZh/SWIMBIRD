@@ -5,7 +5,7 @@ set -euo pipefail
 MASTER_ADDR="$1"
 shift
 
-source /project/siyuh/common/chaoyi/miniconda3/etc/profile.d/conda.sh
+source /home/chaoyiz/miniconda3/etc/profile.d/conda.sh
 conda activate swimbird
 
 PROJECT_ROOT="${PROJECT_ROOT:-/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD}"
