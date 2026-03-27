@@ -9,6 +9,7 @@
 #SBATCH --constraint=gpu_a100_80gb
 #SBATCH -C interconnect_100g
 #SBATCH --time=48:00:00
+#SBATCH --partition=mri2020
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=chaoyiz@clemson.edu
 #SBATCH --output=/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/slurm_logs/%x_%j.out
@@ -17,7 +18,8 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/scripts/slurm_train"
+LAUNCH_SCRIPT="${SCRIPT_DIR}/pretrain_slurm.sh"
 master_addr="$(scontrol show hostnames "${SLURM_JOB_NODELIST}" | head -n 1)"
 
 mkdir -p /project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/slurm_logs
@@ -30,4 +32,4 @@ echo "Nodes: ${SLURM_JOB_NUM_NODES}"
 echo "GPUs per node: 2"
 echo "=========================================="
 
-srun bash "${SCRIPT_DIR}/pretrain_slurm.sh" "${master_addr}" "$@"
+srun bash "${LAUNCH_SCRIPT}" "${master_addr}" "$@"
