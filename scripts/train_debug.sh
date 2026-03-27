@@ -70,7 +70,7 @@ set -x
 torchrun $DISTRIBUTED_ARGS \
     src/train/train.py \
     --run_name "$RUN_NAME" \
-    --deepspeed scripts/zero3.json \
+    --deepspeed scripts/zero3_offload.json \
     --latent_loss $LATENT_LOSS\
     --model_id $MODEL_NAME \
     --data_path "${DATA_PATH[@]}" \
@@ -88,7 +88,6 @@ torchrun $DISTRIBUTED_ARGS \
     --num_train_epochs 1 \
     --per_device_train_batch_size $BATCH_PER_DEVICE \
     --gradient_accumulation_steps $GRAD_ACCUM_STEPS \
-    --deepspeed scripts/zero2.json \
     --max_seq_length 2048 \
     --max_latent_token 4 \
     --image_max_pixels $((1024 * 32 * 32)) \
