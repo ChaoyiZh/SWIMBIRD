@@ -9,7 +9,6 @@
 #SBATCH --constraint=gpu_a100_80gb
 #SBATCH -C interconnect_100g
 #SBATCH --time=48:00:00
-#SBATCH --partition=mri2020
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --mail-user=chaoyiz@clemson.edu
 #SBATCH --output=/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/slurm_logs/%x_%j.out
