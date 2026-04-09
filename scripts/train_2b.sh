@@ -91,7 +91,7 @@ torchrun $DISTRIBUTED_ARGS \
     --lazy_preprocess True \
     --save_strategy "steps" \
     --save_steps 200 \
-    --save_total_limit 10 \
+    --save_total_limit 30 \
     --dataloader_num_workers 8 \
     --random_seed $RANDOM_SEED \
     --report_to wandb # wandb
