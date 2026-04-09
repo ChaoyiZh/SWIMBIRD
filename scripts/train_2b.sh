@@ -25,7 +25,6 @@ DISTRIBUTED_ARGS="
 # model configs
 MODEL_SIZE='2B'
 MODEL_NAME="models/Qwen3-VL-2B-Instruct" # change to the path of your local model if you have already downloaded the model and converted it to HuggingFace format
-RESUME_TRAINING_STATE="${RESUME_TRAINING_STATE:-false}"
 
 
 DATA_PATH=(
@@ -67,7 +66,6 @@ torchrun $DISTRIBUTED_ARGS \
     --deepspeed scripts/zero2.json \
     --latent_loss $LATENT_LOSS\
     --model_id $MODEL_NAME \
-    --resume_training_state "$RESUME_TRAINING_STATE" \
     --data_path "${DATA_PATH[@]}" \
     --remove_unused_columns False \
     --freeze_vision_tower True \
