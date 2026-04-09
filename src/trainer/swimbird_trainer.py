@@ -33,6 +33,46 @@ class SwimBirdSFTTrainer(Trainer):
 
     def __init__(self, *args, **kwargs):
         super(SwimBirdSFTTrainer, self).__init__(*args, **kwargs)
+        self._latest_loss_metrics = {}
+
+    @staticmethod
+    def _to_float(value):
+        if value is None:
+            return None
+        if isinstance(value, torch.Tensor):
+            if value.numel() == 0:
+                return None
+            return value.detach().float().mean().item()
+        return float(value)
+
+    def compute_loss(self, model, inputs, return_outputs=False, num_items_in_batch=None):
+        if num_items_in_batch is None:
+            outputs = model(**inputs)
+        else:
+            outputs = model(**inputs, num_items_in_batch=num_items_in_batch)
+
+        loss = outputs["loss"] if isinstance(outputs, dict) else outputs.loss
+
+        metrics = {}
+        for key, log_key in (
+            ("ce_loss", "train/loss_ce"),
+            ("latent_loss", "train/loss_latent"),
+            ("weighted_latent_loss", "train/loss_latent_weighted"),
+        ):
+            value = outputs[key] if isinstance(outputs, dict) else getattr(outputs, key, None)
+            value = self._to_float(value)
+            if value is not None:
+                metrics[log_key] = value
+        self._latest_loss_metrics = metrics
+
+        return (loss, outputs) if return_outputs else loss
+
+    def log(self, logs, start_time=None):
+        if self._latest_loss_metrics and "loss" in logs and "eval_loss" not in logs:
+            logs = dict(logs)
+            for key, value in self._latest_loss_metrics.items():
+                logs.setdefault(key, value)
+        return super().log(logs, start_time=start_time)
 
     def create_optimizer(self):
         """

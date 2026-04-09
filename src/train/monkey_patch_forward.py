@@ -41,6 +41,9 @@ class Qwen2_5_VLCausalLMOutputWithPast(ModelOutput):
     attentions: Optional[Tuple[torch.FloatTensor]] = None
     rope_deltas: Optional[torch.LongTensor] = None
     latent_hidden_state: Optional[Tuple[torch.FloatTensor]] = None
+    ce_loss: Optional[torch.FloatTensor] = None
+    latent_loss: Optional[torch.FloatTensor] = None
+    weighted_latent_loss: Optional[torch.FloatTensor] = None
 
 @dataclass
 class Qwen3VLModelOutputWithPast(ModelOutput):
@@ -60,6 +63,9 @@ class Qwen3VLCausalLMOutputWithPast(ModelOutput):
     attentions: Optional[tuple[torch.FloatTensor]] = None
     rope_deltas: Optional[torch.LongTensor] = None
     latent_hidden_state: Optional[Tuple[torch.FloatTensor]] = None
+    ce_loss: Optional[torch.FloatTensor] = None
+    latent_loss: Optional[torch.FloatTensor] = None
+    weighted_latent_loss: Optional[torch.FloatTensor] = None
 
 
 def qwen2_5_mixed_modality_forward(
@@ -310,10 +316,14 @@ def qwen2_5_vl_generation_forward(
     logits = self.lm_head(hidden_states[:, slice_indices, :])
 
     loss = None
+    ce_loss = None
+    latent_loss = None
+    weighted_latent_loss = None
     if labels is not None:
-        loss = self.loss_function(
+        ce_loss = self.loss_function(
             logits=logits, labels=labels, vocab_size=self.config.text_config.vocab_size, **kwargs
         )
+        loss = ce_loss
 
     if pixel_values_latent is not None:
         predict_embeddings = hidden_states
@@ -330,8 +340,9 @@ def qwen2_5_vl_generation_forward(
         elif self.config.latent_loss == 'sim':
             sim_loss = torch.nn.functional.cosine_similarity(gt_embeddings, shift_predict_embeddings).mean()
             latent_loss = 1 - sim_loss
-        
-        loss = loss + self.config.latent_lambda*latent_loss
+
+        weighted_latent_loss = self.config.latent_lambda * latent_loss
+        loss = weighted_latent_loss if loss is None else loss + weighted_latent_loss
 
 
     return Qwen2_5_VLCausalLMOutputWithPast(
@@ -341,7 +352,10 @@ def qwen2_5_vl_generation_forward(
         hidden_states=outputs.hidden_states,
         attentions=outputs.attentions,
         rope_deltas=outputs.rope_deltas,
-        latent_hidden_state = latent_hidden_state
+        latent_hidden_state=latent_hidden_state,
+        ce_loss=ce_loss,
+        latent_loss=latent_loss,
+        weighted_latent_loss=weighted_latent_loss,
     )
 
 
@@ -569,8 +583,12 @@ def qwen3_vl_generation_forward(
     logits = self.lm_head(hidden_states[:, slice_indices, :])
 
     loss = None
+    ce_loss = None
+    latent_loss = None
+    weighted_latent_loss = None
     if labels is not None:
-        loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.text_config.vocab_size)
+        ce_loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.text_config.vocab_size)
+        loss = ce_loss
     
     if pixel_values_latent is not None:
         predict_embeddings = hidden_states
@@ -587,13 +605,17 @@ def qwen3_vl_generation_forward(
         elif self.config.latent_loss == 'sim':
             sim_loss = torch.nn.functional.cosine_similarity(gt_embeddings, shift_predict_embeddings).mean()
             latent_loss = 1 - sim_loss
-        
-        loss = loss + self.config.latent_lambda*latent_loss
+
+        weighted_latent_loss = self.config.latent_lambda * latent_loss
+        loss = weighted_latent_loss if loss is None else loss + weighted_latent_loss
 
     return Qwen3VLCausalLMOutputWithPast(
         loss=loss,
         logits=logits,
         past_key_values=outputs.past_key_values,
         rope_deltas=outputs.rope_deltas,
-        latent_hidden_state = latent_hidden_state,
+        latent_hidden_state=latent_hidden_state,
+        ce_loss=ce_loss,
+        latent_loss=latent_loss,
+        weighted_latent_loss=weighted_latent_loss,
     )
