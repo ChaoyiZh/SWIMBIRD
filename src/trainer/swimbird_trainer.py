@@ -18,6 +18,12 @@ from transformers.pytorch_utils import ALL_LAYERNORM_LAYERS
 
 
 class SwimBirdWandbCallback(WandbCallback):
+    def setup(self, args, state, model, **kwargs):
+        super().setup(args, state, model, **kwargs)
+        if self._wandb is not None and state.is_world_process_zero and getattr(self._wandb, "define_metric", None):
+            self._wandb.define_metric("global_step")
+            self._wandb.define_metric("*", step_metric="global_step", step_sync=True)
+
     def on_log(self, args, state, control, model=None, logs=None, **kwargs):
         single_value_scalars = [
             "train_runtime",
@@ -36,7 +42,7 @@ class SwimBirdWandbCallback(WandbCallback):
                 if key in single_value_scalars:
                     self._wandb.run.summary[key] = value
             non_scalar_logs = {key: value for key, value in logs.items() if key not in single_value_scalars}
-            self._wandb.log(non_scalar_logs, step=state.global_step)
+            self._wandb.log({**non_scalar_logs, "global_step": state.global_step}, step=state.global_step)
 
 def maybe_zero_3(param, ignore_status=False, name=None):
     from deepspeed import zero
