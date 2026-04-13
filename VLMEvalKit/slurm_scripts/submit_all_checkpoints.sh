@@ -4,6 +4,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
+CONFIG_FILE="${SCRIPT_DIR}/../vlmeval/config.py"
 
 declare -A SCRIPT_MAP=(
     [DynaMath]=run_DynaMath.sh
@@ -74,6 +75,11 @@ if [[ ! -d "${CHECKPOINT_ROOT}" ]]; then
     exit 1
 fi
 
+if [[ ! -f "${CONFIG_FILE}" ]]; then
+    echo "Config file does not exist: ${CONFIG_FILE}" >&2
+    exit 1
+fi
+
 checkpoint_root_name="$(basename "${CHECKPOINT_ROOT}")"
 if [[ "${checkpoint_root_name}" == "swimbird" ]]; then
     MODEL_PREFIX="SwimBird-SFT-8B_ckpt"
@@ -105,6 +111,66 @@ mapfile -t CHECKPOINT_DIRS < <(find "${CHECKPOINT_ROOT}" -maxdepth 1 -mindepth 1
 
 if (( ${#CHECKPOINT_DIRS[@]} == 0 )); then
     echo "No checkpoint-* directories found under ${CHECKPOINT_ROOT}" >&2
+    exit 1
+fi
+
+mapfile -t REGISTERED_STEPS < <(
+    MODEL_PREFIX="${MODEL_PREFIX}" CONFIG_FILE="${CONFIG_FILE}" python - <<'PY'
+import os
+import pathlib
+import re
+import sys
+
+model_prefix = os.environ["MODEL_PREFIX"]
+config_path = pathlib.Path(os.environ["CONFIG_FILE"])
+text = config_path.read_text()
+
+prefix_to_pattern = {
+    "SwimBird-SFT-8B_ckpt": r"for step in \(([^)]*)\):\n\s*swimbird_series\[f'SwimBird-SFT-8B_ckpt\{step\}'\]",
+    "SwimBird-SFT-2B_ckpt": r"for step in \(([^)]*)\):\n\s*swimbird_series\[f'SwimBird-SFT-2B_ckpt\{step\}'\]",
+    "SwimBird-SFT-2B-Thought0-Latent_ckpt": r"for step in \(([^)]*)\):\n\s*swimbird_series\[f'SwimBird-SFT-2B-Thought0-Latent_ckpt\{step\}'\]",
+}
+
+pattern = prefix_to_pattern.get(model_prefix)
+if pattern is None:
+    sys.exit(f"Unsupported model prefix: {model_prefix}")
+
+match = re.search(pattern, text)
+if match is None:
+    sys.exit(f"Could not find registered checkpoints for prefix: {model_prefix}")
+
+for raw_step in match.group(1).split(","):
+    step = raw_step.strip()
+    if step:
+        print(step)
+PY
+)
+
+if (( ${#REGISTERED_STEPS[@]} == 0 )); then
+    echo "No registered checkpoints found in ${CONFIG_FILE} for prefix ${MODEL_PREFIX}" >&2
+    exit 1
+fi
+
+declare -A REGISTERED_STEP_SET=()
+for step in "${REGISTERED_STEPS[@]}"; do
+    REGISTERED_STEP_SET["$step"]=1
+done
+
+FILTERED_CHECKPOINT_DIRS=()
+for checkpoint_dir in "${CHECKPOINT_DIRS[@]}"; do
+    checkpoint_name="$(basename "${checkpoint_dir}")"
+    step="${checkpoint_name#checkpoint-}"
+    if [[ -n "${REGISTERED_STEP_SET[$step]+x}" ]]; then
+        FILTERED_CHECKPOINT_DIRS+=("${checkpoint_dir}")
+    else
+        echo "Skipping unregistered checkpoint: ${checkpoint_name}" >&2
+    fi
+done
+
+CHECKPOINT_DIRS=("${FILTERED_CHECKPOINT_DIRS[@]}")
+
+if (( ${#CHECKPOINT_DIRS[@]} == 0 )); then
+    echo "No registered checkpoint-* directories found under ${CHECKPOINT_ROOT}" >&2
     exit 1
 fi
 
