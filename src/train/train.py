@@ -7,6 +7,13 @@ from src.trainer import SwimBirdSFTTrainer
 from src.dataset import make_supervised_data_module
 from src.params import DataArguments, ModelArguments, TrainingArguments
 from src.model.swimbird import SwimBird_Qwen2_5_VL, SwimBird_Qwen3VL
+from src.constants import (
+    LATENT_TOKEN,
+    LATENT_START_TOKEN,
+    LATENT_END_TOKEN,
+    PLAN_START_TOKEN,
+    PLAN_END_TOKEN,
+)
 
 from train_utils import safe_save_model_for_hf_trainer
 from src.train.monkey_patch_forward import (
@@ -143,17 +150,37 @@ def train():
 
     # configure processors and special tokens
     processor = AutoProcessor.from_pretrained(model_args.model_id,min_pixels=data_args.image_min_pixels,max_pixels=data_args.image_max_pixels)
-    latent_tokens = ["<|latent|>", "<|latent_start|>", "<|latent_end|>"]
+    latent_tokens = [
+        LATENT_TOKEN,
+        LATENT_START_TOKEN,
+        LATENT_END_TOKEN,
+        PLAN_START_TOKEN,
+        PLAN_END_TOKEN,
+    ]
     processor.tokenizer.add_tokens(latent_tokens, special_tokens=False)
 
-    latent_id = processor.tokenizer.convert_tokens_to_ids("<|latent|>")
-    latent_start_id = processor.tokenizer.convert_tokens_to_ids("<|latent_start|>")
-    latent_end_id = processor.tokenizer.convert_tokens_to_ids("<|latent_end|>")
+    latent_id = processor.tokenizer.convert_tokens_to_ids(LATENT_TOKEN)
+    latent_start_id = processor.tokenizer.convert_tokens_to_ids(LATENT_START_TOKEN)
+    latent_end_id = processor.tokenizer.convert_tokens_to_ids(LATENT_END_TOKEN)
+    plan_start_id = processor.tokenizer.convert_tokens_to_ids(PLAN_START_TOKEN)
+    plan_end_id = processor.tokenizer.convert_tokens_to_ids(PLAN_END_TOKEN)
  
     model.config.latent_id = latent_id
     model.config.latent_start_id = latent_start_id
     model.config.latent_end_id = latent_end_id
+    model.config.plan_start_id = plan_start_id
+    model.config.plan_end_id = plan_end_id
     model.config.max_latent_token = data_args.max_latent_token
+
+    rank0_print(
+        "[debug-plan-tokens]",
+        f"latent_id={latent_id}",
+        f"latent_start_id={latent_start_id}",
+        f"latent_end_id={latent_end_id}",
+        f"plan_start_id={plan_start_id}",
+        f"plan_end_id={plan_end_id}",
+        f"tokenizer_size={len(processor.tokenizer)}",
+    )
 
     # there are some dummy tokens in newer hf version
     if get_model_vocab_size(model.config) < len(processor.tokenizer):

@@ -7,6 +7,16 @@ from datasets import load_dataset, concatenate_datasets, Dataset as HFDataset, F
 from qwen_vl_utils import process_vision_info
 from .data_utils import *
 from src.constants import SYSTEM_MESSAGE
+from src.constants import (
+    LATENT_TOKEN,
+    LATENT_START_TOKEN,
+    LATENT_END_TOKEN,
+    PLAN_START_TOKEN,
+    PLAN_END_TOKEN,
+)
+
+DEBUG_PLAN_BATCH_PRINT_LIMIT = 8
+_debug_plan_batch_print_count = 0
 
 # ========== Dataset Class ==========
 class SwimBirdSFTDataset(Dataset):
@@ -272,14 +282,17 @@ class SwimBirdDataCollator:
         self.args = args
         
         # Precompute token IDs once
-        self.latent_token_idx = processor.tokenizer("<|latent|>", return_tensors="pt")["input_ids"][0]
-        self.latent_start_idx = processor.tokenizer("<|latent_start|>", return_tensors="pt")["input_ids"][0]
-        self.latent_end_idx = processor.tokenizer("<|latent_end|>", return_tensors="pt")["input_ids"][0]
+        self.latent_token_idx = processor.tokenizer(LATENT_TOKEN, return_tensors="pt")["input_ids"][0]
+        self.latent_start_idx = processor.tokenizer(LATENT_START_TOKEN, return_tensors="pt")["input_ids"][0]
+        self.latent_end_idx = processor.tokenizer(LATENT_END_TOKEN, return_tensors="pt")["input_ids"][0]
+        self.plan_start_idx = processor.tokenizer(PLAN_START_TOKEN, return_tensors="pt")["input_ids"][0]
+        self.plan_end_idx = processor.tokenizer(PLAN_END_TOKEN, return_tensors="pt")["input_ids"][0]
         self.pad_token_idx = processor.tokenizer("<|endoftext|>", return_tensors="pt")["input_ids"][0]
         self.answer_start_token_pattern = processor.tokenizer("<|im_start|>assistant", return_tensors="pt")["input_ids"][0]
     
     def __call__(self, raw_examples):
         """Process batch of raw examples."""
+        global _debug_plan_batch_print_count
         examples = [
             cot_preprocess_function(
                 ex, 
@@ -325,6 +338,28 @@ class SwimBirdDataCollator:
            
         batch["input_ids"] = new_input_ids
         batch["attention_mask"] = new_attention_mask
+
+        if _debug_plan_batch_print_count < DEBUG_PLAN_BATCH_PRINT_LIMIT:
+            plan_start_count = (batch["input_ids"] == self.plan_start_idx).sum().item()
+            plan_end_count = (batch["input_ids"] == self.plan_end_idx).sum().item()
+            latent_count = (batch["input_ids"] == self.latent_token_idx).sum().item()
+            latent_start_count = (batch["input_ids"] == self.latent_start_idx).sum().item()
+            latent_end_count = (batch["input_ids"] == self.latent_end_idx).sum().item()
+            latent_feature_count = 0
+            if batch["pixel_values_latent"] is not None and batch["image_grid_thw_latent"] is not None:
+                for grid in batch["image_grid_thw_latent"]:
+                    latent_feature_count += int(grid[0].item() * grid[1].item() * grid[2].item())
+
+            print(
+                "[debug-plan-batch]",
+                f"plan_starts={plan_start_count}",
+                f"plan_ends={plan_end_count}",
+                f"latent_starts={latent_start_count}",
+                f"latent_ends={latent_end_count}",
+                f"latent_tokens={latent_count}",
+                f"latent_feature_tokens={latent_feature_count}",
+            )
+            _debug_plan_batch_print_count += 1
 
         labels = generate_labels_after_multi_token_start(
             batch["input_ids"], self.answer_start_token_pattern, 

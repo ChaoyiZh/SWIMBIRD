@@ -420,8 +420,17 @@ def qwen3_vl_mixed_modality_forward(
         n_image_features = latent_image_embeds.shape[0]
 
         if n_image_tokens != n_image_features:
+            plan_start_id = getattr(self.config, "plan_start_id", None)
+            plan_end_id = getattr(self.config, "plan_end_id", None)
+            plan_start_count = (input_ids == plan_start_id).sum().item() if plan_start_id is not None else 0
+            plan_end_count = (input_ids == plan_end_id).sum().item() if plan_end_id is not None else 0
+            latent_start_count = (input_ids == self.config.latent_start_id).sum().item()
+            latent_end_count = (input_ids == self.config.latent_end_id).sum().item()
             raise ValueError(
-                f"Latent image features and latent tokens do not match: tokens: {n_image_tokens}, features {n_image_features}"
+                "Latent image features and latent tokens do not match: "
+                f"tokens: {n_image_tokens}, features {n_image_features}, "
+                f"plan_starts: {plan_start_count}, plan_ends: {plan_end_count}, "
+                f"latent_starts: {latent_start_count}, latent_ends: {latent_end_count}"
             )
         
         mask = input_ids == self.config.latent_id

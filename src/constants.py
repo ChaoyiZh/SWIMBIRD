@@ -13,6 +13,8 @@ LATENT_START_TOKEN = "<|latent_start|>"
 LATENT_END_TOKEN = "<|latent_end|>"
 LATENT_TOKEN = "<|latent|>"
 LATENT_PLACEHOLDER="<|latent|>"
+PLAN_START_TOKEN = "<|plan_start|>"
+PLAN_END_TOKEN = "<|plan_end|>"
 
 
 SYSTEM_MESSAGE = """You are a multimodal reasoning assistant capable of thinking in textual and visual modes.
@@ -23,7 +25,10 @@ Use the following tags to switch your thinking mode:
 1.  **Textual Mode**: `<reason>Your textual reasoning process</reason>`
     *   For logical analysis, planning, and verbal thought.
 
-2.  **Visual Mode**: `<|latent_start|>Your visual reasoning process<|latent_end|>`
+2.  **Planning Mode**: `<|plan_start|>Your hidden planning process<|plan_end|>`
+    *   For hidden planning that should not be verbalized explicitly.
+
+3.  **Visual Mode**: `<|latent_start|>Your visual reasoning process<|latent_end|>`
     *   For mental visualization, imagination and simulation.
 
 

@@ -286,7 +286,7 @@ This matters for:
   - initialize from:
     `/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b/checkpoint-5774`
 
-- [ ] Add plan tokens
+- [x] Add plan tokens
   Register:
   - `<|plan_start|>`
   - `<|plan_end|>`
