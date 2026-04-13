@@ -27,7 +27,7 @@ MODEL_NAME="${MODEL_NAME:-models/Qwen3-VL-2B-Instruct}"
 INIT_CHECKPOINT="${INIT_CHECKPOINT:-/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b/checkpoint-5774}"
 
 DATA_PATH=(
-    "SwimBird-SFT-92K-segment_0_plan/plan8/SwimBird-ZebraCoT/Zebra-CoT.json"
+    "SwimBird-SFT-92K-segment_0_plan/plan8/SwimBird-ZebraCoT"
     "SwimBird-SFT-92K-segment_0_plan/plan8/SwimBird-ThinkMorph"
     "SwimBird-SFT-92K-segment_0_plan/plan8/SwimBird-MathCanvas"
     "SwimBird-SFT-92K-segment_0_plan/plan8/SwimBird-OpenMMReasoner"
