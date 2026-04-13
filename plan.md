@@ -1,51 +1,51 @@
-# ZebraCoT THOUGHT 0 Implicit Planning Experiment Plan
+# Segment-Based Hidden Planning Plan
 
 ## 1. Goal
 
-Run a first controlled experiment to test whether SwimBird can internalize the **first reasoning step** on ZebraCoT by replacing explicit `THOUGHT 0` text with a new hidden planning span.
+Introduce a new hidden planning mode into SwimBird by replacing the **first visible reasoning segment** with a new `plan` segment.
 
-This is a **small-scope mechanism validation**, not a full method rewrite.
+This is no longer a ZebraCoT-only `THOUGHT 0` experiment. It is a **segment-based extension of SwimBird's current training format**.
 
-The experiment should answer:
+The immediate purpose is not to maximize benchmark score. The first purpose is to answer two practical questions:
 
-- Can the model still reason correctly if `THOUGHT 0` is removed from visible text supervision?
-- Can a new planning token span act as a hidden prefix reasoning channel without collapsing into an obvious shortcut?
-- Can we do this while preserving the existing SwimBird behavior for later visible text reasoning and visual latent reasoning?
+- does training remain stable after introducing the new `plan` mode?
+- does the new `plan` mode behave stably and consistently, instead of collapsing into an obvious shortcut?
 
-## 2. Scope of V1
+## 2. Core idea
 
-This first version is intentionally narrow.
+Current SwimBird is naturally segment-based:
 
-### Included
+- visible text reasoning segments
+- visual latent/image segments
+- answer segment
 
-- only `ZebraCoT`
-- only samples with explicit `THOUGHT 0` marker
-- only the first reasoning step is hidden
-- later reasoning text remains visible
-- later reasoning images remain supervised by the original SwimBird latent-image loss
+The new idea is:
 
-### Excluded
+- identify the first visible reasoning segment on the assistant side
+- replace that segment with a `plan` segment
+- keep all later visible reasoning segments unchanged
+- keep all later visual latent/image segments unchanged
+- keep the final answer explicit
 
-- `ThinkMorph`
-- `MathCanvas`
-- `OpenMMReasoner`
-- hiding `THOUGHT 1+`
-- dynamic planning-length prediction
-- direct supervision on the new planning span
-- mixed-data training with the other three datasets
+So the system becomes:
+
+- `plan` segment for hidden planning
+- `reason` segments for later visible textual reasoning
+- existing visual latent segments for image-backed latent reasoning
+- explicit answer output
 
 ## 3. New token design
 
-We will introduce a new reasoning-mode entry for hidden planning:
+Add two new special tokens:
 
 - `<|plan_start|>`
 - `<|plan_end|>`
 
-Inside the planning span, we will **reuse** the existing body token:
+Inside the plan span, reuse the existing latent body token:
 
 - `<|latent|>`
 
-So the training-time replacement will look like:
+So a plan segment looks like:
 
 ```text
 <|plan_start|><|latent|><|latent|><|latent|><|latent|><|latent|><|latent|><|latent|><|latent|><|plan_end|>
@@ -53,298 +53,349 @@ So the training-time replacement will look like:
 
 ### Why this design
 
-- do not reuse `<reason>` because it carries explicit-language bias
+- do not reuse `<reason>` because it carries explicit language bias
 - do not reuse `<|latent_start|>` because it carries visual-latent bias
-- reuse `<|latent|>` internally because it is only the carrier token for recurrent hidden-state propagation
+- reuse `<|latent|>` internally because it already serves as the hidden-state carrier in SwimBird
 
-## 4. Planning span length
+## 4. Hidden-state propagation
+
+The current assumption is:
+
+- the internal propagation inside the `plan` span should **reuse SwimBird's latent hidden-state propagation mechanism**
+
+This is intentional:
+
+- we do not want to invent a second recurrence mechanism in V1
+- we only want a new mode entry token (`plan_start/plan_end`)
+- the body still uses hidden-state recurrence similarly to the current latent path
+
+This must still be implemented carefully so the `plan` span is not confused with image-backed latent spans for loss masking.
+
+### Architectural principle
+
+V1 should follow:
+
+- **shared propagation, separate supervision/mode entry**
+
+Meaning:
+
+- the `plan` span and the existing visual latent span share the same underlying hidden-state propagation mechanism
+- but they must use different mode-entry tokens
+- and they must remain separated in supervision and masking logic
+
+So:
+
+- propagation can be shared
+- mode semantics should be separate
+- loss routing should be separate
+
+## 5. Planning length
 
 ### Default
 
-- fixed planning length = `8`
+- use `8` latent body tokens inside the `plan` span
 
 ### Requirement
 
-- this must be configurable from one place so later ablations can test other values such as `4`, `8`, `16`
+- make this configurable from one place
+- later ablations should be able to test other values such as `4`, `8`, `16`
 
-### V1 choice
+### V1 policy
 
-- use `8` for the first run
-- do not make it dynamic in V1
+- fixed length only
+- no dynamic plan length in the first version
 
-## 5. Data strategy
+## 6. Scope of V1
 
-### 5.1 Offline preprocessing
+### Included
 
-Do not mutate the original ZebraCoT file in place.
+- use the full training set
+- preprocess a new offline training dataset variant before training
+- apply the rule uniformly across all train datasets
+- replace only the first visible reasoning segment
+- keep later visible reasoning segments unchanged
+- keep later image-backed latent segments unchanged
+- keep answer explicit
+- initialize from an already trained 2B SwimBird model
+- write results to a new experiment directory using `segment_0_plan` naming
 
-Instead:
+### Excluded
 
-- create a new offline-processed ZebraCoT JSON
-- keep the original file untouched
-- use the new JSON as the training input for this experiment
+- THOUGHT-based parsing as the main rule
+- ZebraCoT-only logic
+- hiding more than one reasoning segment
+- direct supervision on the plan segment
+- dynamic plan-length prediction
 
-This makes the experiment:
+## 7. Definition: visible reasoning segment
 
-- reproducible
-- easy to diff
-- easy to disable or roll back
+A **visible reasoning segment** means:
 
-### 5.2 New dataset artifact
+- an assistant-side text reasoning block
+- that is non-empty
+- that is not an image segment
+- that is not the final answer segment
+- that would normally become a visible `<reason>...</reason>` block in the current SwimBird preprocessing
 
-Planned new artifact:
+Important:
 
-- one new ZebraCoT JSON file containing the modified assistant reasoning strings
+- the first assistant segment is not necessarily a visible reasoning segment
+- some samples may start with an image segment or other non-reason content
 
-The exact path/name can be decided during implementation, but it should clearly indicate:
+Therefore, V1 must target:
 
-- ZebraCoT
-- plan-token experiment
-- fixed plan length
+- the **first visible reasoning segment**
 
-Example naming direction:
+not:
 
-- `Zebra-CoT-plan8.json`
+- simply the first assistant segment
 
-## 6. THOUGHT 0 extraction rule
+## 8. Fallback behavior
 
-### 6.1 Source of truth
+If a sample does **not** contain a valid first visible reasoning segment, then:
 
-Use the existing ZebraCoT textual markers already present in the raw dataset:
+- keep the sample unchanged
+- train it with the original SwimBird logic
 
-- `THOUGHT 0:`
-- `THOUGHT 1:`
-- `THOUGHT 2:`
-- ...
+This is the correct fallback for V1.
 
-### 6.2 V1 extraction rule
+We do not want to force-plan every sample by heuristic hacking.
 
-For each ZebraCoT sample:
+## 9. Data transformation rule
 
-1. locate `THOUGHT 0:`
-2. identify the textual span belonging to `THOUGHT 0`
-3. replace only that span with the planning span
-4. preserve everything after that according to the original sequence order
+### 9.1 Offline dataset processing
 
-### 6.3 Important rule
+V1 should first build a new offline training dataset variant instead of mutating samples only on-the-fly.
 
-V1 should use a **single deterministic parsing rule**.
+Why:
 
-Do not mix multiple heuristics per sample.
+- easier to inspect and debug transformed samples
+- easier to compare original vs transformed data
+- easier to run later ablations with different plan lengths
+- easier to roll back to the original training set
 
-That means once the boundary policy is chosen, it must apply uniformly.
+Requirements:
 
-### 6.4 Current intended boundary policy
+- keep the original training data unchanged
+- write a new processed dataset artifact
+- make the plan length part of the artifact configuration or naming
+- optionally include lightweight debug metadata if helpful for inspection
 
-The most natural initial policy is:
+### 9.2 Processing policy
 
-- `THOUGHT 0` starts at `THOUGHT 0:`
-- `THOUGHT 0` ends right before `THOUGHT 1:`, if `THOUGHT 1:` exists
+The offline processing stage should:
 
-If a sample structure is more complex, that sample should be:
+- inspect each sample
+- detect whether a valid first visible reasoning segment exists
+- replace only that segment with the configured plan span
+- leave samples unchanged if no valid segment exists
+- save the transformed dataset for later training use
 
-- either handled by a clearly defined fallback
-- or skipped from V1 preprocessing
+### 9.3 Original pattern
 
-V1 should prefer cleanliness over aggressive coverage.
-
-## 7. Replacement behavior
-
-### 7.1 Original form
-
-Typical ZebraCoT assistant reasoning looks like:
-
-```text
-THOUGHT 0: ...
-THOUGHT 1: ...
-<image>
-THOUGHT 2: ...
-...
-```
-
-### 7.2 New form
-
-After preprocessing, the first step should become:
+Current assistant content typically looks like:
 
 ```text
-<|plan_start|><|latent|>x8<|plan_end|>
-THOUGHT 1: ...
-<image>
-THOUGHT 2: ...
+<reason>segment_0</reason>
+<image or latent-image segment if any>
+<reason>segment_1</reason>
 ...
+<answer>...</answer>
 ```
 
-Then the normal SwimBird preprocessing can continue to:
+### 9.4 New pattern
 
-- remove `THOUGHT n:` labels from the visible text pieces
-- wrap visible text pieces in `<reason>...</reason>`
-- keep assistant reasoning images as the original visual-latent supervision path
+After transformation:
 
-### 7.3 Important semantic rule
+```text
+<|plan_start|><|latent|>xN<|plan_end|>
+<image or latent-image segment if any>
+<reason>segment_1</reason>
+...
+<answer>...</answer>
+```
 
-The new plan span is **not** visible reasoning text.
+where:
 
-So it must not be wrapped as `<reason>...</reason>`.
+- `segment_0` is the first visible reasoning segment
+- `N` is the configured plan length, default `8`
 
-## 8. Loss behavior
+## 10. Supervision rule
 
-### 8.1 Planning span
+### Plan segment
 
-The new plan span must receive:
+The plan segment receives:
 
 - no text CE supervision
-- no visual latent MSE supervision
+- no image-backed latent MSE supervision
 
-It is an unsupervised hidden planning prefix.
+It is a hidden planning span only.
 
-### 8.2 Visible text after THOUGHT 0
+### Later visible reasoning segments
 
-All later visible reasoning text continues to use:
+All later visible reasoning segments still receive:
 
-- normal CE loss
+- normal CE supervision
 
-### 8.3 Reasoning images after THOUGHT 0
+### Later image-backed latent segments
 
-All later reasoning-image latent spans continue to use:
+All later assistant image-backed latent segments still receive:
 
-- original SwimBird visual latent loss (`mse` or configured latent loss)
+- normal SwimBird latent-image supervision (`mse` or configured latent loss)
 
-### 8.4 Final answer
+### Answer
 
-Final answer continues to use:
+Answer remains:
 
-- normal CE loss
+- explicit
+- visible
+- CE-supervised
 
-## 9. Core implementation constraint
+## 11. Critical implementation constraint
 
-Even though the plan span reuses `<|latent|>` internally, it must **not** be confused with the existing image-backed latent spans.
+Even though the plan segment reuses `<|latent|>` internally, it must not be treated as if it were an image-backed latent segment.
 
-So implementation must distinguish:
+The code must distinguish:
 
-- planning latent span
-- visual latent span
+- plan span
+- visual latent/image span
 
-This distinction matters for:
+This matters for:
 
-- label masking
-- image latent mask generation
-- latent loss application
-- mode switching during forward/generation if needed
+- CE masking
+- latent/image loss masking
+- any span-to-loss routing
 
-## 10. First-pass implementation plan
+## 12. TODO
 
-### Step 1: offline ZebraCoT preprocessing
+- [x] Create offline dataset processing script
+  The script should:
+  - read the original training data
+  - detect the first visible reasoning segment
+  - replace it with the configured plan span
+  - leave unmatched samples unchanged
+  - write a new processed dataset artifact
+  - print summary statistics for debugging
 
-Create a preprocessing script that:
+- [ ] Define initialization and output-directory policy
+  For the first experiment:
+  - use the old trained 2B model only as initialization weights
+  - do not rely on old optimizer/scheduler/trainer state
+  - use a fresh output directory
+  - use `segment_0_plan` in experiment naming
+  - initialize from:
+    `/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/VLMEvalKit/outputs/swimbird_2b_eval/checkpoint-5774`
 
-- reads the original ZebraCoT JSON
-- detects samples containing `THOUGHT 0`
-- replaces the `THOUGHT 0` text span with:
+- [ ] Add plan tokens
+  Register:
   - `<|plan_start|>`
-  - `N` copies of `<|latent|>`
   - `<|plan_end|>`
-- writes a new JSON file
+  alongside the existing latent tokens.
 
-The script should:
+- [ ] Implement segment-aware preprocessing
+  Update preprocessing so it:
+  - identifies the first visible reasoning segment
+  - replaces it with the `plan` span
+  - keeps all later segments unchanged
+  - leaves samples unchanged when no valid reasoning segment exists
 
-- accept configurable `plan_length`
-- print summary statistics
-- not overwrite the original file
+- [ ] Implement masking and supervision routing
+  Ensure:
+  - plan span is excluded from CE labels
+  - plan span is excluded from image latent MSE
+  - later image-backed latent spans still contribute to latent/image loss
+  - later visible text still contributes to CE
 
-### Step 2: tokenizer/model token registration
+- [ ] Integrate training path
+  Train using the full training set with the new preprocessing rule.
 
-Add new special tokens:
+- [ ] Add a new training launch entry
+  Create a new launch path under:
+  - `/data/chaoyiz/workspace/code/SWIMBIRD/scripts/slurm_train_2b`
+  following the style of the current SLURM launcher and `train_2b.sh`.
 
-- `<|plan_start|>`
-- `<|plan_end|>`
+  The new launch entry should:
+  - start a new experiment for `segment_0_plan`
+  - use a fresh output directory
+  - use the processed offline dataset variant
+  - initialize from:
+    `/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/VLMEvalKit/outputs/swimbird_2b_eval/checkpoint-5774`
+  - continue finetuning from that checkpoint as initialization only, not as a trainer-state resume
 
-These must be registered in training similarly to how latent tokens are currently registered.
+## 13. Debug and verification requirements
 
-### Step 3: dataset processing support
+Debug visibility is required in V1.
 
-Update dataset preprocessing so it:
+We should add explicit prints or logging for inspection so we can confirm the transformation is correct.
 
-- preserves the new planning span in assistant content
-- does not convert it into visible reason text
-- can distinguish plan latent tokens from image latent tokens for masking
+At minimum, debugging output should allow us to verify:
 
-### Step 4: masking/loss routing
+1. whether the sample was transformed or left unchanged
+2. what the first visible reasoning segment originally was
+3. what the transformed assistant content looks like
+4. where the `plan` span appears in the serialized text
+5. whether the plan span is excluded from CE labels
+6. whether the plan span is excluded from image latent loss masks
 
-Update masking logic so:
+Suggested debugging style for V1:
 
-- plan span is excluded from CE labels
-- plan span is excluded from image latent loss
-- later image latent spans still contribute to image latent loss
+- print a few transformed examples at preprocessing/collator time
+- print token-level diagnostics for one or a few samples
+- make the debugging easy to disable later
 
-### Step 5: training recipe
+The purpose is to make sure the implementation is correct before we interpret any training result.
 
-Run a ZebraCoT-only training experiment using the processed file.
+## 14. Success criteria for V1
 
-## 11. Training data policy for V1
+The first version is successful if:
 
-Use only ZebraCoT in the first run.
+- training remains numerically stable
+- the run does not obviously collapse
+- the new `plan` mode does not break the existing text/image reasoning pipeline
+- transformed samples really contain the new plan span where intended
+- the masking and loss routing are correct
 
-This is important because:
+Benchmark improvement is not required in V1. Stability and correctness come first.
 
-- the step boundary is explicit there
-- the experiment question is specifically about `THOUGHT 0`
-- mixing with the other three datasets would make failure analysis harder
+## 15. Future directions after V1
 
-## 12. Ablation directions after V1
+If V1 is stable, later experiments can test:
 
-If V1 runs successfully, the next ablations should be:
-
-1. plan length
+1. plan length ablation
    - `4`
    - `8`
    - `16`
 
-2. training mixture
-   - ZebraCoT only
-   - ZebraCoT + one additional dataset unchanged
+2. more hidden segments
+   - hide first visible reasoning segment
+   - hide first two visible reasoning segments
 
-3. more hidden steps
-   - hide only `THOUGHT 0`
-   - hide `THOUGHT 0` and `THOUGHT 1`
+3. training-split ablations
+   - all train data
+   - only subsets with reasoning images
+   - only text-heavy subsets
 
-4. token design
-   - `plan_start/plan_end + latent body`
-   - if needed later, a dedicated plan-body token
+4. alternate body-token designs
+   - continue reusing `<|latent|>`
+   - later test whether a dedicated plan-body token helps
 
-## 13. Success criteria
+## 16. Summary
 
-V1 should be considered promising if:
+The V1 plan is:
 
-- training is stable
-- later visible reasoning text remains coherent
-- final task accuracy does not collapse
-- the model does not obviously degenerate into a trivial shortcut
+- full train set
+- segment-based transformation
+- replace the first visible reasoning segment with:
+  - `<|plan_start|>`
+  - fixed-length repeated `<|latent|>` body
+  - `<|plan_end|>`
+- reuse SwimBird hidden-state propagation internally
+- no direct supervision on the plan span
+- later visible text still uses CE
+- later image-backed latent segments still use MSE
+- answer stays explicit
+- old trained 2B model is used only as initialization
+- outputs go to a fresh experiment directory with `segment_0_plan` naming
+- add strong debug prints/logging to verify the transformation and masks
 
-The purpose is not to prove the full method immediately. The purpose is to validate that hidden planning for `THOUGHT 0` is trainable inside SwimBird without breaking the existing text/image reasoning pipeline.
-
-## 14. Non-goals for V1
-
-V1 does **not** attempt to prove:
-
-- that the model fully internalizes all early reasoning
-- that the plan span is semantically interpretable
-- that the best token design has already been found
-- that the approach generalizes to all four training datasets
-
-Those are later questions.
-
-## 15. Summary
-
-The first experiment is:
-
-- new tokens: `<|plan_start|>`, `<|plan_end|>`
-- plan body: `8` repeated `<|latent|>` tokens
-- dataset: ZebraCoT only
-- preprocessing: offline new ZebraCoT JSON
-- replacement target: explicit `THOUGHT 0`
-- plan supervision: none
-- later text: CE as usual
-- later reasoning image: MSE as usual
-
-This gives a clean, minimally confounded starting point for testing hidden planning in SwimBird.
-
+This gives a clean first experiment for testing whether SwimBird can support a new hidden planning mode without destabilizing training.
