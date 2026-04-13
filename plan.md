@@ -277,7 +277,7 @@ This matters for:
   - write a new processed dataset artifact
   - print summary statistics for debugging
 
-- [ ] Define initialization and output-directory policy
+- [x] Define initialization and output-directory policy
   For the first experiment:
   - use the old trained 2B model only as initialization weights
   - do not rely on old optimizer/scheduler/trainer state
