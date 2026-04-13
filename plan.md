@@ -284,7 +284,7 @@ This matters for:
   - use a fresh output directory
   - use `segment_0_plan` in experiment naming
   - initialize from:
-    `/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/VLMEvalKit/outputs/swimbird_2b_eval/checkpoint-5774`
+    `/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b/checkpoint-5774`
 
 - [ ] Add plan tokens
   Register:
@@ -319,7 +319,7 @@ This matters for:
   - use a fresh output directory
   - use the processed offline dataset variant
   - initialize from:
-    `/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/VLMEvalKit/outputs/swimbird_2b_eval/checkpoint-5774`
+    `/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b/checkpoint-5774`
   - continue finetuning from that checkpoint as initialization only, not as a trainer-state resume
 
 ## 13. Debug and verification requirements
