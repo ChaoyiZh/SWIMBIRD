@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import json
+import os
 import re
 from pathlib import Path
 from typing import Iterable
@@ -42,6 +43,31 @@ def iter_input_files(input_paths: list[Path]) -> Iterable[Path]:
 def should_skip_file(path: Path) -> bool:
     name = path.name
     return any(pattern in name for pattern in SKIP_NAME_PATTERNS)
+
+
+def rewrite_image_paths(sample: dict, old_prefix: str | None, new_prefix: str | None) -> dict:
+    if not old_prefix or not new_prefix:
+        return sample
+
+    normalized_old = old_prefix.rstrip("/")
+    normalized_new = new_prefix.rstrip("/")
+    new_sample = dict(sample)
+
+    for field in ("image", "reasoning_image"):
+        values = sample.get(field)
+        if not isinstance(values, list):
+            continue
+
+        rewritten = []
+        for value in values:
+            if isinstance(value, str) and value.startswith(normalized_old + "/"):
+                suffix = value[len(normalized_old) + 1 :]
+                rewritten.append(os.path.join(normalized_new, suffix))
+            else:
+                rewritten.append(value)
+        new_sample[field] = rewritten
+
+    return new_sample
 
 
 def replace_first_visible_reasoning_segment(text: str, plan_span: str):
@@ -130,7 +156,24 @@ def main():
         default=3,
         help="Number of transformed samples to print for debugging.",
     )
+    parser.add_argument(
+        "--rewrite-old-prefix",
+        type=str,
+        default=None,
+        help="Optional old image-path prefix to rewrite inside image/reasoning_image.",
+    )
+    parser.add_argument(
+        "--rewrite-new-prefix",
+        type=str,
+        default=None,
+        help="Optional new image-path prefix that replaces --rewrite-old-prefix.",
+    )
     args = parser.parse_args()
+
+    if (args.rewrite_old_prefix is None) != (args.rewrite_new_prefix is None):
+        raise ValueError(
+            "Both --rewrite-old-prefix and --rewrite-new-prefix must be provided together."
+        )
 
     input_paths = [Path(p) for p in args.input]
     output_root = Path(args.output_root)
@@ -161,8 +204,13 @@ def main():
         stats["files_processed"] += 1
 
         for sample in data:
+            rewritten_sample = rewrite_image_paths(
+                sample,
+                args.rewrite_old_prefix,
+                args.rewrite_new_prefix,
+            )
             new_sample, transformed, reason, original_segment, new_gpt_value = transform_sample(
-                sample, plan_span
+                rewritten_sample, plan_span
             )
             processed.append(new_sample)
             stats["total_samples"] += 1
