@@ -8,6 +8,17 @@ from qwen_vl_utils import process_vision_info
 from .data_utils import *
 from src.constants import SYSTEM_MESSAGE
 
+DEBUG_IMAGE_PATH_PRINT_LIMIT = 20
+_debug_image_path_print_count = 0
+
+
+def debug_print_image_path(kind: str, img_path: str):
+    global _debug_image_path_print_count
+    if _debug_image_path_print_count >= DEBUG_IMAGE_PATH_PRINT_LIMIT:
+        return
+    print(f"[debug-image-path] kind={kind} path={img_path}")
+    _debug_image_path_print_count += 1
+
 
 # ========== Dataset Class ==========
 class SwimBirdSFTDataset(Dataset):
@@ -183,6 +194,7 @@ def cot_preprocess_function(example, max_pixels=5120*32*32, min_pixels=128*32*32
                 try:
                     # The JSON contains image paths, so we need to load them with Pillow.
                     #image_data = Image.open(img_path).convert('RGB')
+                    debug_print_image_path("user", img_path)
                     user_content.append({
                         "type": "image",
                         "image": img_path,
@@ -219,6 +231,7 @@ def cot_preprocess_function(example, max_pixels=5120*32*32, min_pixels=128*32*32
                 img_path = reasoning_image_paths[reasoning_image_idx]
                 try:
                     #image_data = Image.open(img_path).convert('RGB')
+                    debug_print_image_path("assistant_reasoning", img_path)
                     assistant_content.append({
                         "type": "image",
                         "image": img_path,
@@ -357,4 +370,3 @@ def make_supervised_data_module(processor, args):
         eval_dataset=None,
         data_collator=data_collator
     )
-
