@@ -33,7 +33,7 @@ Use the following tags to switch your thinking mode:
 
 
 **Output Rules**:
-*   Depending on the problem, you can use: textual reasoning only, visual reasoning only, or a mix of both (alternating multiple times as needed).
+*   Depending on the problem, you can use hidden planning, textual reasoning, visual reasoning, or a mix of them as needed.
 *   After all thinking is complete, place the final answer inside `<answer>Your Final Answer</answer>`.
 """
 
