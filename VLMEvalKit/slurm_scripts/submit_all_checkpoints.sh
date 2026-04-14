@@ -87,6 +87,8 @@ elif [[ "${checkpoint_root_name}" == "swimbird_singlenode_2b" ]]; then
     MODEL_PREFIX="SwimBird-SFT-2B_ckpt"
 elif [[ "${checkpoint_root_name}" == "swimbird_singlenode_2b_thought0_latent" ]]; then
     MODEL_PREFIX="SwimBird-SFT-2B-Thought0-Latent_ckpt"
+elif [[ "${checkpoint_root_name}" == "swimbird_singlenode_2b_last_ckpt_segment_0_plan" ]]; then
+    MODEL_PREFIX="SwimBird-SFT-2B-Last-Ckpt-Segment-0-Plan_ckpt"
 else
     echo "Unsupported checkpoint root: ${CHECKPOINT_ROOT}" >&2
     echo "Expected one of:" >&2
