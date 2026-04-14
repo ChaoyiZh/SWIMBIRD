@@ -250,11 +250,6 @@ class SwimBird(SwimBirdPrompt, BaseModel):
         self.FRAME_FACTOR = 2
         assert model_path is not None
         self.model_path = model_path
-        normalized_model_path = str(model_path).lower()
-        self.enable_plan_prompt = (
-            "segment_0_plan" in normalized_model_path
-            or "last-ckpt-segment-0-plan" in normalized_model_path
-        )
 
         import sys
         import os
