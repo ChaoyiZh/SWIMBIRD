@@ -1736,7 +1736,7 @@ SWIMBIRD_COMMON_KWARGS = dict(
 SWIMBIRD_8B_RETRAIN_ROOT = '/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird'
 SWIMBIRD_2B_RETRAIN_ROOT = '/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b'
 SWIMBIRD_2B_THOUGHT0_LATENT_ROOT = '/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b_thought0_latent'
-
+SWIMBIRD_2B_LAST_CKPT_SEGMENT_0_PLAN_ROOT = '/project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b_last_ckpt_segment_0_plan'
 swimbird_series = {
     'SwimBird-SFT-8B': partial(
         SwimBird,
@@ -1764,6 +1764,14 @@ swimbird_series = {
         ),
         **SWIMBIRD_COMMON_KWARGS
     ),
+    'SwimBird-SFT-2B-Last-Ckpt-Segment-0-Plan': partial(
+        SwimBird,
+        model_path=os.environ.get(
+            'SWIMBIRD_2B_LAST_CKPT_SEGMENT_0_PLAN_MODEL_PATH',
+            f'{SWIMBIRD_2B_LAST_CKPT_SEGMENT_0_PLAN_ROOT}/checkpoint-5774'
+        ),
+        **SWIMBIRD_COMMON_KWARGS
+    )
 }
 
 for step in (200, 400, 600, 722):
@@ -1786,6 +1794,12 @@ for step in (200, 400, 600, 800, 1000, 1200, 1278):
         **SWIMBIRD_COMMON_KWARGS
     )
 
+for step in (500, 1000, 1500, 2000,2500, 3000,3500, 4000, 4500,5000,5500, 5774):
+    swimbird_series[f'SwimBird-SFT-2B-Last-Ckpt-Segment-0-Plan_ckpt{step}'] = partial(
+        SwimBird,
+        model_path=f'{SWIMBIRD_2B_LAST_CKPT_SEGMENT_0_PLAN_ROOT}/checkpoint-{step}',
+        **SWIMBIRD_COMMON_KWARGS
+    )
 slime_series = {
     "Slime-7B": partial(SliME, model_path="yifanzhang114/SliME-vicuna-7B"),
     "Slime-8B": partial(SliME, model_path="yifanzhang114/SliME-Llama3-8B"),
