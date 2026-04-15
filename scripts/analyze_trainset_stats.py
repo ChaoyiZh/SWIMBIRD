@@ -14,6 +14,8 @@ from pathlib import Path
 #   SwimBird-SFT-92K/SwimBird-OpenMMReasoner
 
 IMAGE_MARKER = "<image>"
+PLAN_START_MARKER = "<|plan_start|>"
+PLAN_END_MARKER = "<|plan_end|>"
 SKIP_FILE_PATTERNS = (
     "_stats.json",
     "_rejected.json",
@@ -61,6 +63,16 @@ def split_segments(text: str):
     return text_segments, image_segments
 
 
+def remove_first_plan_span(text: str):
+    if not text:
+        return text
+    pattern = re.compile(
+        re.escape(PLAN_START_MARKER) + r".*?" + re.escape(PLAN_END_MARKER),
+        re.DOTALL,
+    )
+    return pattern.sub("", text, count=1)
+
+
 def classify_sample(sample: dict):
     conversations = normalize_conversations(sample.get("conversations", []))
     human_turn = next((turn for turn in conversations if turn.get("from") == "human"), {})
@@ -71,6 +83,10 @@ def classify_sample(sample: dict):
 
     user_text_segments, user_image_segments = split_segments(human_text)
     assistant_text_segments, assistant_image_segments = split_segments(gpt_text)
+    has_plan = PLAN_START_MARKER in gpt_text and PLAN_END_MARKER in gpt_text
+    assistant_text_wo_plan = remove_first_plan_span(gpt_text) if has_plan else gpt_text
+    post_plan_text_segments, post_plan_image_segments = split_segments(assistant_text_wo_plan)
+    post_plan_total_segments = len(post_plan_text_segments) + post_plan_image_segments
 
     answer = sample.get("answer", "")
     answer_present = bool(str(answer).strip())
@@ -104,6 +120,15 @@ def classify_sample(sample: dict):
     else:
         high_level_pattern = "other"
 
+    if not has_plan:
+        plan_followup_pattern = "no_plan"
+    elif post_plan_total_segments == 0:
+        plan_followup_pattern = "plan_then_answer_only"
+    elif post_plan_total_segments == 1:
+        plan_followup_pattern = "plan_then_one_followup_then_answer"
+    else:
+        plan_followup_pattern = "plan_then_multi_followup_then_answer"
+
     return {
         "vision_or_interleave": vision_or_interleave,
         "user_text_segments": len(user_text_segments),
@@ -115,6 +140,13 @@ def classify_sample(sample: dict):
         "user_image_count": user_image_count,
         "reasoning_image_count": reasoning_image_count,
         "answer_present": answer_present,
+        "assistant_has_plan": has_plan,
+        "assistant_has_reason_after_plan": "<reason>" in assistant_text_wo_plan,
+        "assistant_has_image_after_plan": post_plan_image_segments > 0,
+        "post_plan_text_segments": len(post_plan_text_segments),
+        "post_plan_image_segments": post_plan_image_segments,
+        "post_plan_total_segments": post_plan_total_segments,
+        "plan_followup_pattern": plan_followup_pattern,
     }
 
 
@@ -125,12 +157,19 @@ def init_stats():
         "assistant_pattern": Counter(),
         "high_level_pattern": Counter(),
         "answer_present": 0,
+        "assistant_has_plan": 0,
+        "assistant_has_reason_after_plan": 0,
+        "assistant_has_image_after_plan": 0,
         "user_image_count_sum": 0,
         "reasoning_image_count_sum": 0,
         "user_text_segments_sum": 0,
         "user_image_segments_sum": 0,
         "assistant_text_segments_sum": 0,
         "assistant_image_segments_sum": 0,
+        "post_plan_text_segments_sum": 0,
+        "post_plan_image_segments_sum": 0,
+        "post_plan_total_segments_sum": 0,
+        "plan_followup_pattern": Counter(),
         "total_segments_sum": 0,
     }
 
@@ -141,12 +180,20 @@ def update_stats(stats: dict, features: dict):
     stats["assistant_pattern"][features["assistant_pattern"]] += 1
     stats["high_level_pattern"][features["high_level_pattern"]] += 1
     stats["answer_present"] += int(features["answer_present"])
+    stats["assistant_has_plan"] += int(features["assistant_has_plan"])
     stats["user_image_count_sum"] += features["user_image_count"]
     stats["reasoning_image_count_sum"] += features["reasoning_image_count"]
     stats["user_text_segments_sum"] += features["user_text_segments"]
     stats["user_image_segments_sum"] += features["user_image_segments"]
     stats["assistant_text_segments_sum"] += features["assistant_text_segments"]
     stats["assistant_image_segments_sum"] += features["assistant_image_segments"]
+    stats["plan_followup_pattern"][features["plan_followup_pattern"]] += 1
+    if features["assistant_has_plan"]:
+        stats["assistant_has_reason_after_plan"] += int(features["assistant_has_reason_after_plan"])
+        stats["assistant_has_image_after_plan"] += int(features["assistant_has_image_after_plan"])
+        stats["post_plan_text_segments_sum"] += features["post_plan_text_segments"]
+        stats["post_plan_image_segments_sum"] += features["post_plan_image_segments"]
+        stats["post_plan_total_segments_sum"] += features["post_plan_total_segments"]
     stats["total_segments_sum"] += (
         features["user_text_segments"]
         + features["user_image_segments"]
@@ -163,6 +210,7 @@ def pct(value: int, total: int) -> str:
 
 def print_stats(name: str, stats: dict):
     total = stats["samples"]
+    plan_total = stats["assistant_has_plan"]
     if total == 0:
         print(f"\n=== {name} ===")
         print("samples: 0")
@@ -193,6 +241,19 @@ def print_stats(name: str, stats: dict):
         )
     )
     print(
+        "plan_stats: "
+        f"has_plan={stats['assistant_has_plan']} ({pct(stats['assistant_has_plan'], total)}), "
+        f"reason_after_plan={stats['assistant_has_reason_after_plan']} ({pct(stats['assistant_has_reason_after_plan'], plan_total)} of plan samples), "
+        f"image_after_plan={stats['assistant_has_image_after_plan']} ({pct(stats['assistant_has_image_after_plan'], plan_total)} of plan samples)"
+    )
+    print(
+        "plan_followup_pattern: "
+        + ", ".join(
+            f"{k}={v} ({pct(v, total)})"
+            for k, v in sorted(stats["plan_followup_pattern"].items())
+        )
+    )
+    print(
         "avg_counts: "
         f"user_images={stats['user_image_count_sum'] / total:.2f}, "
         f"reasoning_images={stats['reasoning_image_count_sum'] / total:.2f}, "
@@ -200,6 +261,9 @@ def print_stats(name: str, stats: dict):
         f"user_image_segments={stats['user_image_segments_sum'] / total:.2f}, "
         f"assistant_text_segments={stats['assistant_text_segments_sum'] / total:.2f}, "
         f"assistant_image_segments={stats['assistant_image_segments_sum'] / total:.2f}, "
+        f"post_plan_text_segments={stats['post_plan_text_segments_sum'] / plan_total if plan_total else 0.0:.2f}, "
+        f"post_plan_image_segments={stats['post_plan_image_segments_sum'] / plan_total if plan_total else 0.0:.2f}, "
+        f"post_plan_total_segments={stats['post_plan_total_segments_sum'] / plan_total if plan_total else 0.0:.2f}, "
         f"total_segments={stats['total_segments_sum'] / total:.2f}"
     )
 
