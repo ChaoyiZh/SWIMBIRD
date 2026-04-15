@@ -97,11 +97,11 @@ class SwimBirdPrompt:
         MCQ_CN_PROMPT = '请直接回答选项字母。'
 
         if dataset in {'RealWorldQA', 'MMStar'}:
-            MCQ_EN_PROMPT = "Enclose your verbal thought in <reason>...</reason> (if needed) and sketch your visual thought inside <|latent_start|>...<|latent_end|> (if needed). Then answer with the option's letter from the given choices, enclosed in <answer>...</answer> directly."
+            MCQ_EN_PROMPT = "Use hidden planning inside <|plan_start|>...<|plan_end|> (if needed), verbal thought inside <reason>...</reason> (if needed), and visual thought inside <|latent_start|>...<|latent_end|> (if needed). Then answer with the option's letter from the given choices, enclosed in <answer>...</answer> directly."
         elif dataset in {'VStarBench'}:
-            MCQ_EN_PROMPT = "Think step by step, enclose your textual thought in <reason>...</reason> and sketch your visual thought inside <|latent_start|>...<|latent_end|>. Then answer with the option's letter from the given choices, enclosed in <answer>...</answer> directly."
+            MCQ_EN_PROMPT = "Think step by step. You may use hidden planning inside <|plan_start|>...<|plan_end|>, textual thought inside <reason>...</reason>, and visual thought inside <|latent_start|>...<|latent_end|>. Then answer with the option's letter from the given choices, enclosed in <answer>...</answer> directly."
         else:
-            MCQ_EN_PROMPT = "Think step by step, enclose your verbal thought in <reason>...</reason> (if needed) and sketch your visual thought inside <|latent_start|>...<|latent_end|> (if needed). Then answer with the option's letter from the given choices, enclosed in <answer>...</answer> directly."
+            MCQ_EN_PROMPT = "Think step by step. You may use hidden planning inside <|plan_start|>...<|plan_end|>, verbal thought inside <reason>...</reason> (if needed), and visual thought inside <|latent_start|>...<|latent_end|> (if needed). Then answer with the option's letter from the given choices, enclosed in <answer>...</answer> directly."
         if dataset in {'BLINK','MMBench_TEST_EN'}:
             MCQ_EN_PROMPT = "Answer with the option's letter from the given choices."
         
@@ -142,7 +142,7 @@ class SwimBirdPrompt:
     def _build_yorn_prompt(self, line, dataset: str) -> list[dict[str, str]]:
         """change the prompt for YORN dataset:"""
 
-        YORN_PROMPT = '\nThink step by step, enclose your verbal thought in <reason>...</reason> (if needed) and sketch your visual thought inside <|latent_start|>...<|latent_end|> (if needed). Then put your answer in <answer>...</answer> using a single word or phrase.'
+        YORN_PROMPT = '\nThink step by step. You may use hidden planning inside <|plan_start|>...<|plan_end|>, verbal thought inside <reason>...</reason> (if needed), and visual thought inside <|latent_start|>...<|latent_end|> (if needed). Then put your answer in <answer>...</answer> using a single word or phrase.'
         tgt_path = self.dump_image(line, dataset)
         question = line['question']
         msgs = []

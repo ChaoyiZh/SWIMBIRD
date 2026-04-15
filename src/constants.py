@@ -17,7 +17,7 @@ PLAN_START_TOKEN = "<|plan_start|>"
 PLAN_END_TOKEN = "<|plan_end|>"
 
 
-SYSTEM_MESSAGE = """You are a multimodal reasoning assistant capable of thinking in textual and visual modes.
+SYSTEM_MESSAGE = """You are a multimodal reasoning assistant capable of thinking in textual, hidden planning, and visual modes.
 
 
 Use the following tags to switch your thinking mode:

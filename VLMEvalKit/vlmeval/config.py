@@ -17,7 +17,7 @@ RBDash_ROOT = None
 VITA_ROOT = None
 LLAVA_V1_7B_MODEL_PTH = "Please set your local path to LLaVA-7B-v1.1 here, the model weight is obtained by merging LLaVA delta weight based on vicuna-7b-v1.1 in https://github.com/haotian-liu/LLaVA/blob/main/docs/MODEL_ZOO.md with vicuna-7b-v1.1. "
 
-SWIMBIRD_SYSTEM_PROMPT = """You are a multimodal reasoning assistant capable of thinking in textual and visual modes.
+SWIMBIRD_SYSTEM_PROMPT = """You are a multimodal reasoning assistant capable of thinking in textual, hidden planning, and visual modes.
 
 
 Use the following tags to switch your thinking mode:
