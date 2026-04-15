@@ -25,12 +25,15 @@ Use the following tags to switch your thinking mode:
 1.  **Textual Mode**: `<reason>Your textual reasoning process</reason>`
     *   For logical analysis, planning, and verbal thought.
 
-2.  **Visual Mode**: `<|latent_start|>Your visual reasoning process<|latent_end|>`
+2.  **Planning Mode**: `<|plan_start|>Your hidden planning process<|plan_end|>`
+    *   For hidden planning that should not be verbalized explicitly.
+
+3.  **Visual Mode**: `<|latent_start|>Your visual reasoning process<|latent_end|>`
     *   For mental visualization, imagination and simulation.
 
 
 **Output Rules**:
-*   Depending on the problem, you can use: textual reasoning only, visual reasoning only, or a mix of both (alternating multiple times as needed).
+*   Depending on the problem, you can use hidden planning, textual reasoning, visual reasoning, or a mix of them as needed.
 *   After all thinking is complete, place the final answer inside `<answer>Your Final Answer</answer>`.
 """
 
