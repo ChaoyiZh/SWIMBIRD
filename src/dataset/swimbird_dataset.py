@@ -26,6 +26,18 @@ def _truncate_debug_text(value, limit=800):
     text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
     return text if len(text) <= limit else text[:limit] + "...<truncated>"
 
+
+def normalize_conversations_debug(conversations):
+    if isinstance(conversations, list):
+        return conversations
+    if isinstance(conversations, dict):
+        keys = list(conversations.keys())
+        if not keys:
+            return []
+        length = len(conversations[keys[0]])
+        return [{k: conversations[k][i] for k in keys} for i in range(length)]
+    return []
+
 def is_plan_segment(text: str) -> bool:
     stripped = text.strip()
     return (
@@ -320,7 +332,7 @@ class SwimBirdDataCollator:
             if self._debug_sample_preview_remaining <= 0:
                 break
 
-            conversations = normalize_conversations(raw_example.get("conversations", []))
+            conversations = normalize_conversations_debug(raw_example.get("conversations", []))
             gpt_turn = next((turn for turn in conversations if turn.get("from") == "gpt"), {})
             assistant_turn = next(
                 (turn for turn in processed_example if turn.get("role") == "assistant"),
