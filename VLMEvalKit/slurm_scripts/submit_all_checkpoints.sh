@@ -87,15 +87,15 @@ elif [[ "${checkpoint_root_name}" == "swimbird_singlenode_2b" ]]; then
     MODEL_PREFIX="SwimBird-SFT-2B_ckpt"
 elif [[ "${checkpoint_root_name}" == "swimbird_singlenode_2b_thought0_latent" ]]; then
     MODEL_PREFIX="SwimBird-SFT-2B-Thought0-Latent_ckpt"
-elif [[ "${checkpoint_root_name}" == "swimbird_singlenode_2b_last_ckpt_segment_0_plan" ]]; then
-    MODEL_PREFIX="SwimBird-SFT-2B-Last-Ckpt-Segment-0-Plan_ckpt"
+elif [[ "${checkpoint_root_name}" == "swimbird_singlenode_2b_best_ckpt_segment_0_plan" ]]; then
+    MODEL_PREFIX="SwimBird-SFT-2B-Best-Ckpt-Segment-0-Plan_ckpt"
 else
     echo "Unsupported checkpoint root: ${CHECKPOINT_ROOT}" >&2
     echo "Expected one of:" >&2
     echo "  /project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird" >&2
     echo "  /project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b" >&2
     echo "  /project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b_thought0_latent" >&2
-    echo "  /project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b_last_ckpt_segment_0_plan" >&2
+    echo "  /project/siyuh/common/chaoyi/workspace/code/SWIMBIRD/swimbird_singlenode_2b_best_ckpt_segment_0_plan" >&2
     exit 1
 fi
 
