@@ -1780,7 +1780,7 @@ swimbird_series = {
         SwimBird,
         model_path=os.environ.get(
             'SWIMBIRD_2B_BEST_CKPT_SEGMENT_0_PLAN_NO_OPENMMREASONER_MODEL_PATH',
-            f'{SWIMBIRD_2B_BEST_CKPT_SEGMENT_0_PLAN_NO_OPENMMREASONER_ROOT}/checkpoint-5774'
+            f'{SWIMBIRD_2B_BEST_CKPT_SEGMENT_0_PLAN_NO_OPENMMREASONER_ROOT}/checkpoint-2649'
         ),
         **SWIMBIRD_COMMON_KWARGS
     )
@@ -1813,7 +1813,7 @@ for step in ( 1000, 2000, 3000, 4000,5000, 5774):
         **SWIMBIRD_COMMON_KWARGS
     )
 
-for step in ( 1000, 2000, 3000, 4000,5000, 5774):
+for step in ( 1000, 2000, 2649):
     swimbird_series[f'SwimBird-SFT-2B-Best-Ckpt-Segment-0-Plan-NoOpenMMReasoner_ckpt{step}'] = partial(
         SwimBird,
         model_path=f'{SWIMBIRD_2B_BEST_CKPT_SEGMENT_0_PLAN_NO_OPENMMREASONER_ROOT}/checkpoint-{step}',
