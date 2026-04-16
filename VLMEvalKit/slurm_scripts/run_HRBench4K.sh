@@ -7,9 +7,8 @@
 #SBATCH --time=72:00:00
 #SBATCH --gres=gpu:a100:1
 #SBATCH --constraint=gpu_a100_80gb
-#SBATCH --partition=mri2020
 #SBATCH --mail-user=chaoyiz@clemson.edu
-#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --mail-type=FAIL
 #SBATCH --output=/data/chaoyiz/workspace/code/SWIMBIRD/VLMEvalKit/slurm_logs/%x.out
 #SBATCH --error=/data/chaoyiz/workspace/code/SWIMBIRD/VLMEvalKit/slurm_logs/%x.err
 
